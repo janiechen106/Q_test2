@@ -30,8 +30,18 @@ object Main {
 //    Answer for Q1
     val flightPerMonth = countFlightPerMonth(flightData)
     println("Month\tNumber of Flights")
-    flightPerMonth.foreach { case (month,count) =>
-    println(s"$month\t$count")}
+    flightPerMonth.foreach {
+      case (month,count) =>
+        println(s"$month\t$count")
+    }
+
+//    Answer for Q2
+    val topFlyers = findTopFlyers(flightData, passengerData)
+    println("Passenger ID\tNumber of Flights\tFirst Name\tLast Name")
+    topFlyers.foreach{
+      case(passengerId, flightCount, firstName, lastName) =>
+        println(s"$passengerId\t$flightCount\t$firstName\t$lastName")
+    }
   }
 
   // Function to read flight data csv files
@@ -63,24 +73,40 @@ object Main {
   }
 
 //  Function to find the total number of flights for each month
-    def countFlightPerMonth(flightData: List[FlightData]): List[(Int, Int)] = {
-      flightData
-        .flatMap{ data =>
-          Try{
-            // Extract month value
-            val date = LocalDate.parse(data.date, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
-            val month = date.getMonthValue
-            month -> 1
-          }.toOption
-        }
-        .groupBy(_._1) // Group by month
-        .map { case (month, flights) => (month, flights.size) } // Count the number of flights
-        .toList
-        .sortBy(_._1) // Sort by month
+  def countFlightPerMonth(flightData: List[FlightData]): List[(Int, Int)] = {
+    flightData
+      .flatMap{ data =>
+        Try{
+          // Extract month value
+          val date = LocalDate.parse(data.date, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+          val month = date.getMonthValue
+          month -> 1
+        }.toOption
+      }
+      .groupBy(_._1) // Group by month
+      .map { case (month, flights) => (month, flights.size) } // Count the number of flights
+      .toList
+      .sortBy(_._1) // Sort by month
+  }
+
+// Function to find the names of the 100 most frequent flyers
+  def findTopFlyers(flightData: List[FlightData], passengerData: List[PassengerData]): List[(Int, Int, String, String)] = {
+    // Count flight numbers per passenger
+    val flightCounts = flightData
+      .groupBy(_.passengerId)
+      .mapValues(_.size)
+      .toList
+    // Sort by the flight number in descending order, and take top 100
+    val top100 = flightCounts.sortBy(-_._2).take(100)
+
+    val passengerMap = passengerData.map(p => p.passengerId -> (p.firstName, p.lastName)).toMap
+    // Join flight counts with passenger names
+    top100.flatMap { case(passengerId, count) =>
+    passengerMap.get(passengerId) match {
+      case Some((firstName, lastName)) => Some((passengerId, count, firstName, lastName))
     }
-
-
-
+    }
+  }
 
 
 }
