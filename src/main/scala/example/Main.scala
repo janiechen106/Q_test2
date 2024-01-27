@@ -50,6 +50,15 @@ object Main {
       println(s"$passengerId\t$longestStops")
     }
 
+    //       Answer for Q4
+    val frequentFlyerPairs = findFrequentPairs(flightData)
+    println("Passenger 1 ID\tPassenger 2 ID\tNumber of flights together")
+    frequentFlyerPairs.foreach {
+      case ((passenger1Id, passenger2Id), count) =>
+        println(s"$passenger1Id\t$passenger2Id\t$count")
+    }
+
+
   }
 
   // Function to read flight data csv files
@@ -131,5 +140,28 @@ object Main {
       }
       .toList
       .sortBy(-_._2)
+  }
+
+//  Function for Q4, find the passengers who have been on more than 3 flights together.
+  def findFrequentPairs(flightData: List[FlightData]): List[((Int, Int), Int)] = {
+    val eachFlightPassengers = flightData
+      .groupBy(flight => (flight.flightId, flight.date))
+      .map { case (_, groupedFlights) => groupedFlights.map(_.passengerId).distinct }
+
+    val passengerPairs = eachFlightPassengers
+      .flatMap { passengers =>
+        passengers.combinations(2).map {
+          case List(passenger1Id, passenger2Id) => (passenger1Id, passenger2Id)
+        }
+      }
+
+    val frequentPairsCount = passengerPairs
+      .groupBy(identity)
+      .map { case (pair, occurrences) => (pair, occurrences.size) }
+      .filter(_._2 > 3)
+      .toList
+      .sortBy(-_._2)
+
+    frequentPairsCount
   }
 }
