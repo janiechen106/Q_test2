@@ -4,7 +4,7 @@ import scala.io.Source
 import scala.util.Try
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-
+import java.io.PrintWriter
 
 case class FlightData(passengerId: Int, flightId: Int, from: String, to: String, date: String)
 case class PassengerData(passengerId: Int, firstName: String, lastName: String)
@@ -35,6 +35,10 @@ object Main {
         println(s"$month\t$count")
     }
 
+    //    Write Q1 to CSV
+    writeQ1CSV(flightPerMonth, "src/main/resources/q1answer.csv")
+
+
     //    Answer for Q2
     val topFlyers = findTopFlyers(flightData, passengerData)
     println("Passenger ID\tNumber of Flights\tFirst Name\tLast Name")
@@ -43,12 +47,20 @@ object Main {
         println(s"$passengerId\t$flightCount\t$firstName\t$lastName")
     }
 
+    //    Write Q2 to CSV
+    writeQ2CSV(topFlyers, "src/main/resources/q2answer.csv")
+
+
     //    Answer for Q3
     val longestTrip = findLongestTrip(flightData)
     println("Passenger ID\tLongest Run")
     longestTrip.foreach { case (passengerId, longestStops) =>
       println(s"$passengerId\t$longestStops")
     }
+
+    //    Write Q3 to CSV
+    writeQ3CSV(longestTrip, "src/main/resources/q3answer.csv")
+
 
     //       Answer for Q4
     val frequentFlyerPairs = findFrequentPairs(flightData)
@@ -57,6 +69,9 @@ object Main {
       case ((passenger1Id, passenger2Id), count) =>
         println(s"$passenger1Id\t$passenger2Id\t$count")
     }
+
+    //    Write Q4 to CSV
+    writeQ4CSV(frequentFlyerPairs, "src/main/resources/q4answer.csv")
 
 
   }
@@ -106,7 +121,20 @@ object Main {
       .sortBy(_._1) // Sort by month
   }
 
-// Function for Q2, find the names of the 100 most frequent flyers
+  // Function for writing Q1 answer to csv
+  def writeQ1CSV(data: List[(Int, Int)], filePath: String): Unit = {
+    val writer = new PrintWriter(filePath)
+    try {
+      writer.println("Month,Number of Flights")
+      data.foreach { case (month, count) =>
+        writer.println(s"$month,$count")
+      }
+    } finally {
+      writer.close()
+    }
+  }
+
+  // Function for Q2, find the names of the 100 most frequent flyers
   def findTopFlyers(flightData: List[FlightData], passengerData: List[PassengerData]): List[(Int, Int, String, String)] = {
     // Count flight numbers per passenger
     val flightCounts = flightData
@@ -125,7 +153,19 @@ object Main {
     }
   }
 
-// Function for Q3, find the greatest number of countries a passenger has been in without being in the UK.
+  // Function for writing Q2 answer to csv
+  def writeQ2CSV(data: List[(Int, Int, String, String)], filePath: String): Unit = {
+    val writer = new PrintWriter(filePath)
+    try {
+      writer.println("Passenger ID,Number of Flights,First Name,Last Name")
+      data.foreach { case (passengerId, flightCount, firstName, lastName) =>
+        writer.println(s"$passengerId,$flightCount,$firstName,$lastName")
+    }
+  } finally {
+    writer.close()}
+  }
+
+  // Function for Q3, find the greatest number of countries a passenger has been in without being in the UK.
   def findLongestTrip(flightData: List[FlightData]): List[(Int, Int)] = {
     flightData
       .groupBy(_.passengerId)
@@ -142,7 +182,20 @@ object Main {
       .sortBy(-_._2)
   }
 
-//  Function for Q4, find the passengers who have been on more than 3 flights together.
+  // Function for writing Q3 answer to csv
+  def writeQ3CSV(data: List[(Int, Int)], filePath: String): Unit = {
+    val writer = new PrintWriter(filePath)
+    try {
+      writer.println("Passenger ID,Longest Run")
+      data.foreach { case (passengerId, longestStops) =>
+        writer.println(s"$passengerId,$longestStops")}
+    } finally {
+      writer.close()
+    }
+  }
+
+
+  //  Function for Q4, find the passengers who have been on more than 3 flights together.
   def findFrequentPairs(flightData: List[FlightData]): List[((Int, Int), Int)] = {
     val eachFlightPassengers = flightData
       .groupBy(flight => (flight.flightId, flight.date))
@@ -164,4 +217,19 @@ object Main {
 
     frequentPairsCount
   }
+
+  // Function for writing Q4 answer to csv
+  def writeQ4CSV(data: List[((Int, Int), Int)], filePath: String): Unit = {
+    val writer = new PrintWriter(filePath)
+    try {
+      writer.println("Passenger 1 ID,Passenger 2 ID,Number of flights together")
+      data.foreach { case ((passenger1Id, passenger2Id), count) =>
+        writer.println(s"$passenger1Id,$passenger2Id,$count")
+      }
+    } finally {
+      writer.close()
+    }
+  }
+
+
 }
