@@ -6,8 +6,12 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.io.PrintWriter
 
+// For read csv
 case class FlightData(passengerId: Int, flightId: Int, from: String, to: String, date: String)
 case class PassengerData(passengerId: Int, firstName: String, lastName: String)
+// For extra question
+case class PassengerPairWithCount(passenger1Id: Int, passenger2Id: Int, count: Int)
+
 
 
 object Main {
@@ -73,8 +77,24 @@ object Main {
     //    Write Q4 to CSV
     writeQ4CSV(frequentFlyerPairs, "src/main/resources/q4answer.csv")
 
+    // Answer for extra question
+    val atLeastNTimes = 3
+    val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+    val fromDate = LocalDate.parse("2017-01-01", dateFormatter)
+    val toDate = LocalDate.parse("2017-03-01", dateFormatter)
 
+    val frequentFlyerPairsDateRange = flownTogether(atLeastNTimes, fromDate, toDate, flightData)
+
+    println("Passenger 1 ID\tPassenger 2 ID\tNumber of flights together\tFrom\tTo")
+    frequentFlyerPairsDateRange.foreach {
+      case ((passenger1Id, passenger2Id), count) =>
+        println(s"$passenger1Id\t$passenger2Id\t$count\t$fromDate\t$toDate")
+    }
+
+    // Write extra question to CSV
+    writeExtraCSV(frequentFlyerPairsDateRange, "src/main/resources/extra_answer.csv", fromDate, toDate)
   }
+
 
   // Function to read flight data csv files
   def readFlightData(filePath: String): List[FlightData] = {
@@ -197,17 +217,18 @@ object Main {
 
   //  Function for Q4, find the passengers who have been on more than 3 flights together.
   def findFrequentPairs(flightData: List[FlightData]): List[((Int, Int), Int)] = {
+    // Group by flightId and flight date, get a list of passengers for each flight
     val eachFlightPassengers = flightData
       .groupBy(flight => (flight.flightId, flight.date))
       .map { case (_, groupedFlights) => groupedFlights.map(_.passengerId).distinct }
-
+    // Generate unique pairs of passengers for each flight
     val passengerPairs = eachFlightPassengers
       .flatMap { passengers =>
         passengers.combinations(2).map {
           case List(passenger1Id, passenger2Id) => (passenger1Id, passenger2Id)
         }
       }
-
+    // Count the number for each pair & filter the pairs that have flown over 3 times
     val frequentPairsCount = passengerPairs
       .groupBy(identity)
       .map { case (pair, occurrences) => (pair, occurrences.size) }
@@ -231,5 +252,54 @@ object Main {
     }
   }
 
+  // Function for extra question
+  def flownTogether(atLeastNTimes: Int, from: LocalDate, to: LocalDate, flightData: List[FlightData]): List[((Int, Int), Int)] = {
+    // Filter the flight date in the desired range
+    val flightsDateRange = flightData.filter(flight => {
+      val flightDate = LocalDate.parse(flight.date, DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+      !flightDate.isBefore(from) && !flightDate.isAfter(to)
+    })
+
+    // Group by flightId and flight date, get a list of passengers for each flight
+    val eachFlightPassengers = flightsDateRange
+      .groupBy(flight => (flight.flightId, flight.date))
+      .map { case (_, groupedFlights) => groupedFlights.map(_.passengerId).distinct }
+
+
+    // Generate unique pairs of passengers for each flight
+    val passengerPairs = eachFlightPassengers
+      .flatMap { passengers =>
+        passengers.combinations(2).collect {
+          case List(passenger1Id, passenger2Id) => (passenger1Id, passenger2Id)
+        }
+      }
+
+    // Count the number for each pair & filter the pairs that have flown over 3 times
+    val frequentPairsCount = passengerPairs
+      .groupBy(identity)
+      .map { case (pair, occurrences) => (pair, occurrences.size) }
+      .filter(_._2 > atLeastNTimes)
+      .toList
+      .sortBy(-_._2)
+
+    frequentPairsCount
+  }
+
+  // Function to write extra question to CSV
+  def writeExtraCSV(data: List[((Int, Int), Int)], filePath: String, from: LocalDate, to: LocalDate): Unit = {
+    val writer = new PrintWriter(filePath)
+    try {
+      writer.println("Passenger 1 ID,Passenger 2 ID,Number of flights together,From,To")
+      data.foreach {
+        case ((passenger1Id, passenger2Id), count) =>
+          writer.println(s"$passenger1Id,$passenger2Id,$count,${from.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))},${to.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))}")
+      }
+    } finally {
+      writer.close()
+    }
+  }
 
 }
+
+
+
