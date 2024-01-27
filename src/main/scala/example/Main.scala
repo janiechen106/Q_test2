@@ -12,36 +12,44 @@ case class PassengerData(passengerId: Int, firstName: String, lastName: String)
 
 object Main {
   def main(args: Array[String]): Unit = {
-//    Example
-//    val ages = Seq(42, 61, 29, 64)
-//    println(s"The oldest person is ${ages.max}")
+    //    Example
+    //    val ages = Seq(42, 61, 29, 64)
+    //    println(s"The oldest person is ${ages.max}")
 
-//    Read flight and passenger data
+    //    Read flight and passenger data
     val flightData = readFlightData("src/main/resources/flightData.csv")
     val passengerData = readPassengerData("src/main/resources/passengers.csv")
 
-//    print the first 5 lines
+    //    print the first 5 lines
     println("First 5 Flight Data Records:")
     flightData.take(5).foreach(println)
 
     println("\nFirst 5 Passenger Data Records:")
     passengerData.take(5).foreach(println)
 
-//    Answer for Q1
+    //    Answer for Q1
     val flightPerMonth = countFlightPerMonth(flightData)
     println("Month\tNumber of Flights")
     flightPerMonth.foreach {
-      case (month,count) =>
+      case (month, count) =>
         println(s"$month\t$count")
     }
 
-//    Answer for Q2
+    //    Answer for Q2
     val topFlyers = findTopFlyers(flightData, passengerData)
     println("Passenger ID\tNumber of Flights\tFirst Name\tLast Name")
-    topFlyers.foreach{
-      case(passengerId, flightCount, firstName, lastName) =>
+    topFlyers.foreach {
+      case (passengerId, flightCount, firstName, lastName) =>
         println(s"$passengerId\t$flightCount\t$firstName\t$lastName")
     }
+
+    //    Answer for Q3
+    val longestTrip = findLongestTrip(flightData)
+    println("Passenger ID\tLongest Run")
+    longestTrip.foreach { case (passengerId, longestStops) =>
+      println(s"$passengerId\t$longestStops")
+    }
+
   }
 
   // Function to read flight data csv files
@@ -72,7 +80,7 @@ object Main {
     }
   }
 
-//  Function to find the total number of flights for each month
+//  Function for Q1, find the total number of flights for each month
   def countFlightPerMonth(flightData: List[FlightData]): List[(Int, Int)] = {
     flightData
       .flatMap{ data =>
@@ -89,7 +97,7 @@ object Main {
       .sortBy(_._1) // Sort by month
   }
 
-// Function to find the names of the 100 most frequent flyers
+// Function for Q2, find the names of the 100 most frequent flyers
   def findTopFlyers(flightData: List[FlightData], passengerData: List[PassengerData]): List[(Int, Int, String, String)] = {
     // Count flight numbers per passenger
     val flightCounts = flightData
@@ -108,5 +116,20 @@ object Main {
     }
   }
 
-
+// Function for Q3, find the greatest number of countries a passenger has been in without being in the UK.
+  def findLongestTrip(flightData: List[FlightData]): List[(Int, Int)] = {
+    flightData
+      .groupBy(_.passengerId)
+      .map { case (passengerId, flights) =>
+        // List all the countries that each passenger has visited
+        val countriesVisited = flights.flatMap(flight => List(flight.from, flight.to))
+        // Split the list into sublists whenever "UK" is encountered
+        val countriesWithoutUK = countriesVisited.mkString("->").split("->UK->").toList
+        // Find the longest
+        val longestStops = countriesWithoutUK.map(_.split("->").distinct.length).max
+        (passengerId, longestStops)
+      }
+      .toList
+      .sortBy(-_._2)
+  }
 }
